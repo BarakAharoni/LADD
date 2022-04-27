@@ -1,8 +1,7 @@
 # LADD
 Linux Anti-Debugging Detector tool
 
-`
-################################################################
+`################################################################
 #                                                              #
 #                                                              #
 #     _____          _       ______   ______                   #
@@ -15,8 +14,7 @@ Linux Anti-Debugging Detector tool
 #    Linux Anti-Debugging Detector                             #
 #                                                              #
 #    Copyright (c) 2022 Barak Aharoni.  All Rights Reserved.   #
-################################################################
-`
+################################################################`
 
 ## LD_PRELOAD environment variable
 This environment variable is loaded before every library in the system (including the C runtime, libc.so). Thou, malwares can use it, by loading themselves and gain persistence using a command like `export LD_PRELOAD=/malware_path`.
