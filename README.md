@@ -1,5 +1,5 @@
 # LADD
-Linux Anti-Debugging Detector tool
+Linux Anti-Debugging Detection tool
 
 ```                                                     
      _____          _       ______   ______                   
