@@ -15,7 +15,7 @@ BANNER = """
 #     _| |__/ | _/ /   \ \_  _| |_.' /_| |_.' /                #
 #    |________||____| |____||______.'|______.'                 #
 #                                                              #
-#    Linux Anti-Debugging Detector                             #
+#    Linux Anti-Debugging Detection                            #
 #                                                              #
 #    Copyright (c) 2022 Barak Aharoni.  All Rights Reserved.   #
 ################################################################
