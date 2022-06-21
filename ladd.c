@@ -10,7 +10,7 @@
 #     _| |__/ | _/ /   \ \_  _| |_.' /_| |_.' /                #
 #    |________||____| |____||______.'|______.'                 #
 #                                                              #
-#    Linux Anti-Debugging Detector                             #
+#    Linux Anti-Debugging Detection                            #
 #                                                              #
 #    Copyright (c) 2022 Barak Aharoni.  All Rights Reserved.   #
 ################################################################
@@ -126,7 +126,7 @@ void detectPtrace()
 
 int main( void )
 {
-    printf("\n+---------------------------+\n| Linux Anti-Debug Detector |\n+---------------------------+\n\n");
+    printf("\n+---------------------------+\n| Linux Anti-Debug Detection |\n+---------------------------+\n\n");
     detectPtrace();
     detectLD_PREALOAD();
     detectTracerPID();
