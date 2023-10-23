@@ -52,6 +52,8 @@ char* getProcnameByPID(int pid)
             }
             fclose(f);
         }
+    } else {
+        return "Null";
     }
     return name;
 }
@@ -64,9 +66,9 @@ void detectTracerPID()
     int lineLength = 255;
     char line[lineLength];
 
-    char* tracer;
-    int tracerPid;
-    char* content;
+    char* tracer = NULL;
+    int tracerPid = -1;
+    char* content = NULL;
 
     fptr = fopen(PROC_STATUS_PATH, "r");
     
@@ -91,12 +93,21 @@ void detectTracerPID()
     
     // The current process is being debugged
     if (tracerPid != NOT_DEBUGGED_TRACERPID)
-        printf("\t[V] The process is being Debugged by PID: %d, ProcessName: %s\n", tracerPid, getProcnameByPID(tracerPid));
+        char *procName = getProcnameByPID(tracerPid);
+        printf("\t[V] The process is being Debugged by PID: %d, ProcessName: %s\n", tracerPid, procName);
+        free(procName);
     
     // The current process is not debugged
     else
         printf("\t[X] The process is NOT Debugged\n");
-        
+
+    if (tracer) {
+        free(tracer);
+    }
+    if (content) {   
+        free(content);
+    }
+       
 }
 
 // Checks the LD_PRELOAD environment variable
