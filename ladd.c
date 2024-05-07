@@ -24,10 +24,10 @@
 #include <regex.h>
 #include <sys/ptrace.h>
 
-const char* PROC_STATUS_PATH = "/proc/self/status";
+const char *PROC_STATUS_PATH = "/proc/self/status";
 const int NOT_DEBUGGED_TRACERPID = 0;
-const char* CMDLINE_PATH = "/proc/%d/cmdline";
-const char* LD_PRELOAD = "LD_PRELOAD";
+const char *CMDLINE_PATH = "/proc/%d/cmdline";
+const char *LD_PRELOAD = "LD_PRELOAD";
 const int DEBUGGER_PRESENT = -1;
 
 inline void detectTracerPID();
@@ -35,26 +35,31 @@ inline void detectLD_PREALOAD();
 inline void detectPtrace();
 
 // Get process name by its PID
-char* getProcnameByPID(int pid)
+char *getProcnameByPID(int pid)
 {
-    char* name = (char*)calloc(1024, sizeof(char));
-    if(name)
-    {
-        sprintf(name, CMDLINE_PATH, pid);
-        FILE* f = fopen(name, "r");
-        if(f)
-        {
-            size_t size;
-            size = fread(name, sizeof(char), 1024, f);
-            if(size > 0){
-                if('\n' == name[size - 1])
-                    name[size - 1]= '\0';
-            }
-            fclose(f);
-        }
-    } else {
+    char *name = (char*)calloc(1024, sizeof(char));
+    if (name == NULL) {
         return "Null";
     }
+        
+    sprintf(name, CMDLINE_PATH, pid);
+    FILE *f = fopen(name, "r");
+    if (f == NULL) {
+        return "Null";
+    }
+
+    size_t size = 0;
+    size = fread(name, sizeof(char), 1024, f);
+    if (size <= 0) {
+        fclose(f);
+        return "Null";
+    }
+
+    if ('\n' == name[size - 1]) {
+        name[size - 1]= '\0';
+    }
+    fclose(f);
+
     return name;
 }
 
@@ -66,25 +71,24 @@ void detectTracerPID()
     int lineLength = 255;
     char line[lineLength];
 
-    char* tracer = NULL;
+    char *tracer = NULL;
     int tracerPid = -1;
-    char* content = NULL;
+    char *content = NULL;
 
     fptr = fopen(PROC_STATUS_PATH, "r");
     
     // Cannot open the file
-    if(fptr == NULL)
-    {
+    if (fptr == NULL) {
         printf("\t[-] Error opening: %s\n", PROC_STATUS_PATH);
         exit(1);
     }
 
     // Reads every line in the file until finding the 'TracerPid' field
-    while(fgets(line, lineLength, fptr)) 
-    {
+    while (fgets(line, lineLength, fptr)) {
         content = strstr(line, "TracerPid");
-        if(content)
+        if (content) {
             break;
+        }
     }
     fclose(fptr);
 
@@ -92,14 +96,16 @@ void detectTracerPID()
     int ret = sscanf(content, "%s %d" , tracer, &tracerPid);
     
     // The current process is being debugged
-    if (tracerPid != NOT_DEBUGGED_TRACERPID)
+    if (tracerPid != NOT_DEBUGGED_TRACERPID) {
         char *procName = getProcnameByPID(tracerPid);
         printf("\t[V] The process is being Debugged by PID: %d, ProcessName: %s\n", tracerPid, procName);
         free(procName);
+    }
     
     // The current process is not debugged
-    else
+    else {
         printf("\t[X] The process is NOT Debugged\n");
+    }
 
     if (tracer) {
         free(tracer);
@@ -107,20 +113,20 @@ void detectTracerPID()
     if (content) {   
         free(content);
     }
-       
 }
 
 // Checks the LD_PRELOAD environment variable
 void detectLD_PREALOAD()
 {
     printf("LD_PREALOAD Check\n");
-    const char* ldEnvar = getenv(LD_PRELOAD);
+    const char *ldEnvar = getenv(LD_PRELOAD);
     
     // LD_PRELOAD environment variable is empty
-    if(ldEnvar != NULL)
+    if (ldEnvar != NULL) {
         printf("\t[V] %s environment variable found: %s\n", LD_PRELOAD, ldEnvar);
-    else
+    } else {
         printf("\t[X] %s environment variable not found\n", LD_PRELOAD);
+    }
 }
 
 // Use the PTRACE_TRACEME Syscall to detect an attached debugger
@@ -129,10 +135,11 @@ void detectPtrace()
     printf("Ptrace Check\n");
     
     // PTRACE_TRACEME Syscall is already in used
-    if (ptrace(PTRACE_TRACEME, 0, 1, 0) == DEBUGGER_PRESENT) 
+    if (ptrace(PTRACE_TRACEME, 0, 1, 0) == DEBUGGER_PRESENT) {
         printf("\t[V] Process is being debugged\n");
-    else
+    } else {
         printf("\t[X] Process is NOT being debugged\n");
+    }
 }
 
 int main( void )
@@ -141,6 +148,6 @@ int main( void )
     detectPtrace();
     detectLD_PREALOAD();
     detectTracerPID();
-    
+
     return 0;
 }
