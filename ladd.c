@@ -142,12 +142,10 @@ void detectPtrace()
     }
 }
 
-int main( void )
+void runAntiDebugChecks()
 {
     printf("\n+---------------------------+\n| Linux Anti-Debug Detection |\n+---------------------------+\n\n");
     detectPtrace();
     detectLD_PREALOAD();
     detectTracerPID();
-
-    return 0;
 }
