@@ -31,7 +31,7 @@ const char *LD_PRELOAD = "LD_PRELOAD";
 const int DEBUGGER_PRESENT = -1;
 
 inline void detectTracerPID();
-inline void detectLD_PREALOAD();
+inline void detectLD_PRELOAD();
 inline void detectPtrace();
 
 // Get process name by its PID
@@ -71,52 +71,37 @@ void detectTracerPID()
     int lineLength = 255;
     char line[lineLength];
 
-    char *tracer = NULL;
     int tracerPid = -1;
-    char *content = NULL;
 
-    fptr = fopen(PROC_STATUS_PATH, "r");
-    
-    // Cannot open the file
+    fptr = fopen(PROC_STATUS_PATH, "r");    
     if (fptr == NULL) {
         printf("\t[-] Error opening: %s\n", PROC_STATUS_PATH);
-        exit(1);
+        return;
     }
 
     // Reads every line in the file until finding the 'TracerPid' field
     while (fgets(line, lineLength, fptr)) {
-        content = strstr(line, "TracerPid");
-        if (content) {
+        if (strstr(line, "TracerPid")) {
+            sscanf(line, "%*s %d", &tracerPid);
             break;
         }
     }
     fclose(fptr);
 
-    // Use sscanf to catch the PID of the debugger process
-    int ret = sscanf(content, "%s %d" , tracer, &tracerPid);
     
-    // The current process is being debugged
-    if (tracerPid != NOT_DEBUGGED_TRACERPID) {
-        char *procName = getProcnameByPID(tracerPid);
-        printf("\t[V] The process is being Debugged by PID: %d, ProcessName: %s\n", tracerPid, procName);
-        free(procName);
-    }
-    
-    // The current process is not debugged
-    else {
+    if (tracerPid == NOT_DEBUGGED_TRACERPID) {
         printf("\t[X] The process is NOT Debugged\n");
+        return;
     }
 
-    if (tracer) {
-        free(tracer);
-    }
-    if (content) {   
-        free(content);
-    }
+    // The current process is being debugged
+    char *procName = getProcnameByPID(tracerPid);
+    printf("\t[V] The process is being Debugged by PID: %d, ProcessName: %s\n", tracerPid, procName);
+    free(procName);
 }
 
 // Checks the LD_PRELOAD environment variable
-void detectLD_PREALOAD()
+void detectLD_PRELOAD()
 {
     printf("LD_PREALOAD Check\n");
     const char *ldEnvar = getenv(LD_PRELOAD);
@@ -146,6 +131,6 @@ void runAntiDebugChecks()
 {
     printf("\n+---------------------------+\n| Linux Anti-Debug Detection |\n+---------------------------+\n\n");
     detectPtrace();
-    detectLD_PREALOAD();
+    detectLD_PRELOAD();
     detectTracerPID();
 }
