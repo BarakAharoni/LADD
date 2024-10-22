@@ -124,7 +124,7 @@ void detectPtrace()
     printf("Ptrace Check\n");
     
     // PTRACE_TRACEME Syscall is already in used
-    if (ptrace(PTRACE_TRACEME, 0, 1, 0) == DEBUGGER_PRESENT) {
+    if (ptrace(PTRACE_TRACEME, 0, NULL, 0) == DEBUGGER_PRESENT) {
         printf("\t[V] Process is being debugged\n");
     } else {
         printf("\t[X] Process is NOT being debugged\n");
