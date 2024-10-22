@@ -24,6 +24,10 @@
 #include <regex.h>
 #include <sys/ptrace.h>
 
+#ifndef PTRACE_TRACEME
+#define PTRACE_TRACEME 0
+#endif
+
 const char *PROC_STATUS_PATH = "/proc/self/status";
 const int NOT_DEBUGGED_TRACERPID = 0;
 const char *CMDLINE_PATH = "/proc/%d/cmdline";
