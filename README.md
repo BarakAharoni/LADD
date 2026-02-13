@@ -21,7 +21,4 @@ Many debuggers, like `gdb` use this syscall for attach the debugger to the targe
 This file contains information about the process with the relevant PID. One of them is the `TracerPID` parameter.
 When a process is running under debugger, the `TracerPID` parameter contain the PID of the parent process - the debugger. Otherwise, it will contain `0`.
 
-## Usage
-`python3 ./ladd.py {filepath}`
-
 Copyright (c) 2022 Barak Aharoni.  All Rights Reserved.

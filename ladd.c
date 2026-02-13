@@ -20,60 +20,59 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <regex.h>
 #include <sys/ptrace.h>
 
 #ifndef PTRACE_TRACEME
-#define PTRACE_TRACEME 0
+#define PTRACE_TRACEME          0
 #endif
+#define PTRACE_DEBUGGER_PRESENT -1
 
-const char *PROC_STATUS_PATH = "/proc/self/status";
-const int NOT_DEBUGGED_TRACERPID = 0;
-const char *CMDLINE_PATH = "/proc/%d/cmdline";
-const char *LD_PRELOAD = "LD_PRELOAD";
-const int DEBUGGER_PRESENT = -1;
+#define NOT_DEBUGGED_TRACERPID  0
 
-inline void detectTracerPID();
-inline void detectLD_PRELOAD();
-inline void detectPtrace();
+#define PROCNAME_MAX_SIZE       1024
+#define CMDLINE_MAX_PATH        64
+#define TRACER_LINE_MAX_SIZE    255
+
+#define TRACERPID_FIELD_NAME    "TracerPid"
+#define LD_PRELOAD_ENV          "LD_PRELOAD"
+#define PROC_STATUS_PATH        "/proc/self/status"
+#define CMDLINE_PATH_FORMAT     "/proc/%d/cmdline"
 
 // Get process name by its PID
-char *getProcnameByPID(int pid)
+static char *get_procname_by_pid(int pid)
 {
-    char *name = (char*)calloc(1024, sizeof(char));
-    if (name == NULL) {
-        return "Null";
-    }
-        
-    sprintf(name, CMDLINE_PATH, pid);
-    FILE *f = fopen(name, "r");
-    if (f == NULL) {
-        return "Null";
+    char path[CMDLINE_MAX_PATH];
+    snprintf(path, sizeof(path), CMDLINE_PATH_FORMAT, pid);
+
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        return NULL;
     }
 
-    size_t size = 0;
-    size = fread(name, sizeof(char), 1024, f);
-    if (size <= 0) {
+    char *name = calloc(PROCNAME_MAX_SIZE, 1);
+    if (!name) {
         fclose(f);
-        return "Null";
+        return NULL;
     }
 
-    if ('\n' == name[size - 1]) {
-        name[size - 1]= '\0';
-    }
+    size_t size = fread(name, 1, PROCNAME_MAX_SIZE - 1, f);
     fclose(f);
 
+    if (size == 0) {
+        free(name);
+        return NULL;
+    }
+
+    name[size] = '\0';
     return name;
 }
 
 // Reads the /proc/self/status file and TracerPid field to detect an attached debugger
-void detectTracerPID()
+static void detect_tracer_pid()
 {
     printf("TracerPID Check\n");
     FILE *fptr;
-    int lineLength = 255;
-    char line[lineLength];
+    char line[TRACER_LINE_MAX_SIZE];
 
     int tracerPid = -1;
 
@@ -84,8 +83,8 @@ void detectTracerPID()
     }
 
     // Reads every line in the file until finding the 'TracerPid' field
-    while (fgets(line, lineLength, fptr)) {
-        if (strstr(line, "TracerPid")) {
+    while (fgets(line, TRACER_LINE_MAX_SIZE, fptr)) {
+        if (strstr(line, TRACERPID_FIELD_NAME)) {
             sscanf(line, "%*s %d", &tracerPid);
             break;
         }
@@ -99,42 +98,45 @@ void detectTracerPID()
     }
 
     // The current process is being debugged
-    char *procName = getProcnameByPID(tracerPid);
+    char *procName = get_procname_by_pid(tracerPid);
     printf("\t[V] The process is being Debugged by PID: %d, ProcessName: %s\n", tracerPid, procName);
     free(procName);
 }
 
 // Checks the LD_PRELOAD environment variable
-void detectLD_PRELOAD()
+static void detect_ld_preload()
 {
     printf("LD_PREALOAD Check\n");
-    const char *ldEnvar = getenv(LD_PRELOAD);
-    
+    const char *ldEnvar = getenv(LD_PRELOAD_ENV);
+
     // LD_PRELOAD environment variable is empty
-    if (ldEnvar != NULL) {
-        printf("\t[V] %s environment variable found: %s\n", LD_PRELOAD, ldEnvar);
-    } else {
-        printf("\t[X] %s environment variable not found\n", LD_PRELOAD);
+    if (!ldEnvar || *ldEnvar == '\0') {
+        printf("\t[X] %s environment variable not found\n", LD_PRELOAD_ENV);
+        return;
     }
+
+    printf("\t[V] %s environment variable found: %s\n", LD_PRELOAD_ENV, ldEnvar);
 }
 
 // Use the PTRACE_TRACEME Syscall to detect an attached debugger
-void detectPtrace()
+static void detect_ptrace()
 {
     printf("Ptrace Check\n");
-    
+
     // PTRACE_TRACEME Syscall is already in used
-    if (ptrace(PTRACE_TRACEME, 0, NULL, 0) == DEBUGGER_PRESENT) {
-        printf("\t[V] Process is being debugged\n");
-    } else {
+    if (ptrace(PTRACE_TRACEME, 0, NULL, 0) != PTRACE_DEBUGGER_PRESENT) {
         printf("\t[X] Process is NOT being debugged\n");
+        return;
     }
+
+    printf("\t[V] Process is being debugged\n");
 }
 
-void runAntiDebugChecks()
+__attribute__((constructor))
+static void ladd_init()
 {
-    printf("\n+---------------------------+\n| Linux Anti-Debug Detection |\n+---------------------------+\n\n");
-    detectPtrace();
-    detectLD_PRELOAD();
-    detectTracerPID();
+    printf("\nStarting Linux Anti-Debug Detection\n");
+    detect_ptrace();
+    detect_ld_preload();
+    detect_tracer_pid();
 }
